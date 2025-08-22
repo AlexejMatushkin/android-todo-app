@@ -53,7 +53,15 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         // Создаем адаптер
-        adapter = TasksAdapter(tasks)
+        adapter = TasksAdapter(
+            tasks,
+            onTaskClick = { task, position ->
+                showEditDialog(task, position)
+            },
+            onTaskLongCLick = { task, position ->
+                showDeleteDialog(task, position)
+            }
+        )
         recyclerView.adapter = adapter
     }
 
@@ -115,5 +123,60 @@ class MainActivity : AppCompatActivity() {
     private fun hideKeyboard() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(taskInput.windowToken, 0)
+    }
+
+    // Функция для показа диалога подтверждения удаления
+    private fun showDeleteDialog(task: Task, position: Int) {
+        val builder = android.app.AlertDialog.Builder(this)
+
+        builder.setTitle("Удалить задачу?")
+        builder.setMessage("Вы уверены, что хотите удалить '${task.title}'?")
+
+        builder.setPositiveButton("Удалить") { dialog, which ->
+            if (position != -1) {
+                tasks.removeAt(position)
+                adapter.notifyItemRemoved(position)
+                Toast.makeText(
+                    this,
+                    "Задача удалена",
+                    Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNegativeButton("Отмена") { dialog, which ->
+            dialog.dismiss()
+        }
+
+        builder.show()
+    }
+
+    // Функция для показа диалога редактирования задачи
+    private fun showEditDialog(task: Task, position: Int) {
+        val builder = android.app.AlertDialog.Builder(this)
+
+        val editText = EditText(this).apply {
+            setText(task.title)
+            setSelection(task.title.length)
+        }
+
+        builder.setTitle("Редактировать задачу")
+        builder.setView(editText)
+
+        builder.setPositiveButton("Сохранить") { dialog, which ->
+            val newTitle = editText.text.toString().trim()
+            if (newTitle.isNotEmpty()) {
+                task.title = newTitle
+                adapter.notifyItemChanged(position)
+                Toast.makeText(
+                    this,
+                    "Задача обновлена",
+                    Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        builder.setNegativeButton("Отмена") { dialog, which ->
+            dialog.dismiss()
+        }
+
+        builder.show()
     }
 }
