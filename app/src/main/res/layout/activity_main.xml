@@ -56,6 +56,17 @@
             android:background="#FFFFFF"
             android:layout_marginTop="10dp"/>
 
+        <Button
+            android:id="@+id/сlearAllButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Очистить всё"
+            android:backgroundTint="#27AE60"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="20dp" />
+
     </LinearLayout>
     
 
