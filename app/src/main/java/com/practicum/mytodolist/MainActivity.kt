@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.practicum.mytodolist.adapters.TasksAdapter
 import com.practicum.mytodolist.models.Task
+import com.practicum.mytodolist.storage.TaskStorage
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,19 +20,27 @@ class MainActivity : AppCompatActivity() {
     private lateinit var taskInput: EditText
     private lateinit var addButton: Button
     private lateinit var recyclerView: RecyclerView
+    private lateinit var clearAllButton: Button
 
     // Список для хранения задач
     private val tasks = mutableListOf<Task>()
 
     // Адаптер для RecyclerView (связывает данные и view)
     private lateinit var adapter: TasksAdapter
+    private lateinit var taskStorage: TaskStorage
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Инициализируем хранилище
+        taskStorage = TaskStorage(this)
+
         // Инициализируем view-элементы
         initViews()
+
+        // Загружаем сохраненные задачи
+        loadSavedTasks()
 
         // Настраиваем RecyclerView
         setupRecyclerView()
@@ -40,11 +49,19 @@ class MainActivity : AppCompatActivity() {
         setupClickListeners()
     }
 
+    // Функция для загрузки сохраненных задач
+    private fun loadSavedTasks() {
+        val savedTasks = taskStorage.loadTasks()
+        tasks.clear()
+        tasks.addAll(savedTasks)
+    }
+
     // Функция для инициализации view-элементов
     private fun initViews() {
         taskInput = findViewById(R.id.taskInput)
         addButton = findViewById(R.id.addButton)
         recyclerView = findViewById(R.id.tasksRecyclerView)
+        clearAllButton = findViewById(R.id.сlearAllButton)
     }
 
     // Функция для настройки RecyclerView
@@ -60,7 +77,8 @@ class MainActivity : AppCompatActivity() {
             },
             onTaskLongCLick = { task, position ->
                 showDeleteDialog(task, position)
-            }
+            },
+            onCheckboxChange = { taskStorage.saveTasks(tasks) }
         )
         recyclerView.adapter = adapter
     }
@@ -69,6 +87,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupClickListeners() {
         addButton.setOnClickListener {
             addNewTask()
+        }
+
+        clearAllButton.setOnClickListener {
+            clearAllTasks()
         }
 
         // Обработчик нажатия Enter
@@ -88,7 +110,7 @@ class MainActivity : AppCompatActivity() {
         if (title.isNotEmpty()) {
             // Создаем новую задачу
             val newTask = Task(
-                id = tasks.size + 1, // Простой способ генерации ID
+                id = System.currentTimeMillis().toInt(), // Простой способ генерации ID
                 title = title
             )
 
@@ -110,6 +132,7 @@ class MainActivity : AppCompatActivity() {
                 this,
                 "Задача добавлена",
                 Toast.LENGTH_SHORT).show()
+            saveTasks()
         } else {
             // Показываем сообщение если поле пустое
             Toast.makeText(
@@ -117,6 +140,11 @@ class MainActivity : AppCompatActivity() {
                 "Введите задачу",
                 Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // Функция для сохранения задач
+    private fun saveTasks() {
+        taskStorage.saveTasks(tasks)
     }
 
     // Функция для скрытия клавиатуры
@@ -140,6 +168,7 @@ class MainActivity : AppCompatActivity() {
                     this,
                     "Задача удалена",
                     Toast.LENGTH_SHORT).show()
+                saveTasks()
             }
         }
         builder.setNegativeButton("Отмена") { dialog, which ->
@@ -170,7 +199,53 @@ class MainActivity : AppCompatActivity() {
                     this,
                     "Задача обновлена",
                     Toast.LENGTH_SHORT).show()
+                saveTasks()
             }
+        }
+
+        builder.setNegativeButton("Отмена") { dialog, which ->
+            dialog.dismiss()
+        }
+
+        builder.show()
+    }
+
+    // Функция очистки всех задач
+    private fun clearAllTasks() {
+        if (tasks.isNotEmpty()) {
+            showClearAllConfirmationDialog()
+        } else {
+            Toast.makeText(
+                this,
+                "Список задач уже пуст",
+                Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Диалог подтверждения очистки
+
+    private fun showClearAllConfirmationDialog() {
+        val builder = android.app.AlertDialog.Builder(this)
+
+        builder.setTitle("Очистить все задачи?")
+        builder.setMessage("Вы уверены, что хотите удалить? Это действие нельзя отменить.")
+
+        builder.setPositiveButton("Очистить") { dialog, which ->
+
+            val itemCount = tasks.size
+            // Очищаем список
+            tasks.clear()
+
+            // Уведомляем адаптер
+            adapter.notifyItemRangeRemoved(0, itemCount)
+
+            // Сохраняем изменение
+            taskStorage.saveTasks(tasks)
+
+            Toast.makeText(
+                this,
+                "Все задачи удалены",
+                Toast.LENGTH_SHORT).show()
         }
 
         builder.setNegativeButton("Отмена") { dialog, which ->

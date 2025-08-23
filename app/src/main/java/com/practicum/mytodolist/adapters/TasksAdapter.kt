@@ -13,7 +13,8 @@ import com.practicum.mytodolist.models.Task
 class TasksAdapter(
     private val tasks: MutableList<Task>,
     private val onTaskClick: (Task, Int) -> Unit,
-    private val onTaskLongCLick: (Task, Int) -> Unit
+    private val onTaskLongCLick: (Task, Int) -> Unit,
+    private val onCheckboxChange: () -> Unit
 ) : RecyclerView.Adapter<TasksAdapter.TaskViewHolder>() {
 
     // ViewHolder - хрвнит ссылки на view-элементы одного элемента списка
@@ -43,6 +44,7 @@ class TasksAdapter(
         // Обработчик изменения состояния checkbox'a
         holder.checkbox.setOnCheckedChangeListener { _, isChecked ->
             task.isCompleted = isChecked
+            onCheckboxChange()
         }
 
         // Обработка обычного клика - для редактирования
