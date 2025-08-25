@@ -7,11 +7,13 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.practicum.mytodolist.adapters.TasksAdapter
 import com.practicum.mytodolist.models.Task
+import com.practicum.mytodolist.models.TaskCategory
 import com.practicum.mytodolist.storage.TaskStorage
 
 class MainActivity : AppCompatActivity() {
@@ -21,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var addButton: Button
     private lateinit var recyclerView: RecyclerView
     private lateinit var clearAllButton: Button
+    private var selectedCategory: TaskCategory = TaskCategory.NONE
 
     // Список для хранения задач
     private val tasks = mutableListOf<Task>()
@@ -89,6 +92,11 @@ class MainActivity : AppCompatActivity() {
             addNewTask()
         }
 
+        addButton.setOnLongClickListener {
+            showCategoryDialog()
+            true
+        }
+
         clearAllButton.setOnClickListener {
             clearAllTasks()
         }
@@ -110,8 +118,9 @@ class MainActivity : AppCompatActivity() {
         if (title.isNotEmpty()) {
             // Создаем новую задачу
             val newTask = Task(
-                id = System.currentTimeMillis().toInt(), // Простой способ генерации ID
-                title = title
+                id = System.currentTimeMillis(), // Простой способ генерации ID
+                title = title,
+                category = selectedCategory
             )
 
             // Добавляем задачу в список
@@ -133,6 +142,7 @@ class MainActivity : AppCompatActivity() {
                 "Задача добавлена",
                 Toast.LENGTH_SHORT).show()
             saveTasks()
+            selectedCategory = TaskCategory.NONE
         } else {
             // Показываем сообщение если поле пустое
             Toast.makeText(
@@ -253,5 +263,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         builder.show()
+    }
+
+    private fun showCategoryDialog() {
+        val categories = arrayOf("Работа", "Личное", "Покупки", "Здоровье", "Без категории")
+
+        AlertDialog.Builder(this)
+            .setTitle("Выберите категорию")
+            .setItems(categories) { dialog, which ->
+                // which - номер выбранного пункта (0, 1, 2, 3, 4)
+                selectedCategory = when (which) {
+                    0 -> TaskCategory.WORK
+                    1 -> TaskCategory.PERSONAL
+                    2 -> TaskCategory.SHOPPING
+                    3 -> TaskCategory.HEALTH
+                    else -> TaskCategory.NONE
+                }
+                Toast.makeText(this, "Категория выбрана: ${categories[which]}", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 }
